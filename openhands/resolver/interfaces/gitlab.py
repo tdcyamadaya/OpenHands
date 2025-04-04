@@ -1,5 +1,6 @@
 from typing import Any
 from urllib.parse import quote
+import os
 
 import httpx
 
@@ -18,6 +19,7 @@ class GitlabIssueHandler(IssueHandlerInterface):
         self.repo = repo
         self.token = token
         self.username = username
+        self.gitlab_base_url = os.environ.get('GITLAB_URL', 'https://gitlab.com')
         self.base_url = self.get_base_url()
         self.download_url = self.get_download_url()
         self.clone_url = self.get_clone_url()
@@ -34,10 +36,10 @@ class GitlabIssueHandler(IssueHandlerInterface):
 
     def get_base_url(self) -> str:
         project_path = quote(f'{self.owner}/{self.repo}', safe='')
-        return f'https://gitlab.com/api/v4/projects/{project_path}'
+        return f'{self.gitlab_base_url}/api/v4/projects/{project_path}'
 
     def get_authorize_url(self) -> str:
-        return f'https://{self.username}:{self.token}@gitlab.com/'
+        return f'https://{self.username}:{self.token}@{self.gitlab_base_url.replace("https://", "")}'
 
     def get_branch_url(self, branch_name: str) -> str:
         return self.get_base_url() + f'/repository/branches/{branch_name}'
@@ -49,13 +51,13 @@ class GitlabIssueHandler(IssueHandlerInterface):
         username_and_token = self.token
         if self.username:
             username_and_token = f'{self.username}:{self.token}'
-        return f'https://{username_and_token}@gitlab.com/{self.owner}/{self.repo}.git'
+        return f'https://{username_and_token}@{self.gitlab_base_url.replace("https://", "")}/{self.owner}/{self.repo}.git'
 
     def get_graphql_url(self) -> str:
-        return 'https://gitlab.com/api/graphql'
+        return f'{self.gitlab_base_url}/api/graphql'
 
     def get_compare_url(self, branch_name: str) -> str:
-        return f'https://gitlab.com/{self.owner}/{self.repo}/-/compare/{self.get_default_branch_name()}...{branch_name}'
+        return f'{self.gitlab_base_url}/{self.owner}/{self.repo}/-/compare/{self.get_default_branch_name()}...{branch_name}'
 
     def get_converted_issues(
         self, issue_numbers: list[int] | None = None, comment_id: int | None = None
@@ -197,7 +199,7 @@ class GitlabIssueHandler(IssueHandlerInterface):
 
     def reply_to_comment(self, pr_number: int, comment_id: str, reply: str) -> None:
         response = httpx.get(
-            f'{self.base_url}/merge_requests/{pr_number}/discussions/{comment_id.split('/')[-1]}',
+            f'{self.base_url}/merge_requests/{pr_number}/discussions/{comment_id.split("/")[-1]}',
             headers=self.headers,
         )
         response.raise_for_status()
@@ -208,7 +210,7 @@ class GitlabIssueHandler(IssueHandlerInterface):
                 'note_id': discussions.get('notes', [])[-1]['id'],
             }
             response = httpx.post(
-                f'{self.base_url}/merge_requests/{pr_number}/discussions/{comment_id.split('/')[-1]}/notes',
+                f'{self.base_url}/merge_requests/{pr_number}/discussions/{comment_id.split("/")[-1]}/notes',
                 headers=self.headers,
                 json=data,
             )
@@ -216,7 +218,7 @@ class GitlabIssueHandler(IssueHandlerInterface):
 
     def get_pull_url(self, pr_number: int) -> str:
         return (
-            f'https://gitlab.com/{self.owner}/{self.repo}/-/merge_requests/{pr_number}'
+            f'{self.gitlab_base_url}/{self.owner}/{self.repo}/-/merge_requests/{pr_number}'
         )
 
     def get_default_branch_name(self) -> str:
@@ -248,7 +250,7 @@ class GitlabIssueHandler(IssueHandlerInterface):
 
     def request_reviewers(self, reviewer: str, pr_number: int) -> None:
         response = httpx.get(
-            f'https://gitlab.com/api/v4/users?username={reviewer}',
+            f'{self.gitlab_base_url}/api/v4/users?username={reviewer}',
             headers=self.headers,
         )
         response.raise_for_status()
