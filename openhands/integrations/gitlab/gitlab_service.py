@@ -18,7 +18,7 @@ from openhands.utils.import_utils import get_impl
 
 
 class GitLabService(GitService):
-    BASE_URL = 'https://gitlab.com/api/v4'
+    BASE_URL = os.environ.get('GITLAB_URL', 'https://gitlab.com') + '/api/v4'
     token: SecretStr = SecretStr('')
     refresh = False
 

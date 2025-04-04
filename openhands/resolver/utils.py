@@ -64,7 +64,7 @@ def identify_token(token: str, selected_repo: str | None = None) -> Platform:
         logger.error(f'Error connecting to GitHub API: {e}')
 
     # Try GitLab token
-    gitlab_url = 'https://gitlab.com/api/v4/user'
+    gitlab_url = f'{os.environ.get("GITLAB_URL", "https://gitlab.com")}/api/v4/user'
     gitlab_headers = {'Authorization': f'Bearer {token}'}
 
     try:

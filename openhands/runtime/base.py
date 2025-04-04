@@ -332,7 +332,7 @@ class Runtime(FileEditRuntimeMixin):
     ) -> str:
         provider_domains = {
             ProviderType.GITHUB: 'github.com',
-            ProviderType.GITLAB: 'gitlab.com',
+            ProviderType.GITLAB: os.environ.get('GITLAB_URL', 'https://gitlab.com').replace('https://', ''),
         }
 
         chosen_provider = (
